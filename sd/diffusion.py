@@ -164,7 +164,7 @@ class UNET(nn.Module):
         self.encoders = nn.Module([  # Encoder reduces the size of the image in the unet , increases the features
             # latent: (BATCH, 4, height / 8, width / 8)
             SwitchSequential(nn.Conv2d(4, 320, kernel_size=3, padding = 1)),
-            SwitchSequential(UNET_residualBlock(320, 320), UNET_AttentionBlock(8, 40)),
+            SwitchSequential(UNET_ResidualBlock(320, 320), UNET_AttentionBlock(8, 40)),
             SwitchSequential(UNET_ResidualBlock(320, 320), UNET_AttentionBlock(8, 40)),
             # (batch, 4, height / 8, width / 8) -> (batch, 320, height / 16, width / 16)
 
@@ -199,15 +199,15 @@ class UNET(nn.Module):
             SwitchSequential(UNET_ResidualBlock(2560, 1280)), # 2560 as decoder also has skip connections
             SwitchSequential(UNET_ResidualBlock(2560, 1280)),
 
-            SwitchSequential(UNET_ResidualBlock(2560, 1280), UpSample(1280)),
+            SwitchSequential(UNET_ResidualBlock(2560, 1280), Upsample(1280)),
 
             SwitchSequential(UNET_ResidualBlock(2560, 1280), UNET_AttentionBlock(8, 160)),
             SwitchSequential(UNET_ResidualBlock(2560, 1280), UNET_AttentionBlock(8, 160)),
 
-            SwitchSequential(UNET_ResidualBlock(1920, 1280), UNET_AttentionBlock(8, 160), UpSample(1280)),
+            SwitchSequential(UNET_ResidualBlock(1920, 1280), UNET_AttentionBlock(8, 160), Upsample(1280)),
             
             SwitchSequential(UNET_ResidualBlock(1920, 640), UNET_AttentionBlock(8, 80)),
-            SwitchSequential(UNET_ResidualBlock(960, 640), UNET_AttentionBlock(8, 80), UpSample(640)),
+            SwitchSequential(UNET_ResidualBlock(960, 640), UNET_AttentionBlock(8, 80), Upsample(640)),
 
             SwitchSequential(UNET_ResidualBlock(640, 320), UNET_AttentionBlock(8, 40)),
             SwitchSequential(UNET_ResidualBlock(640, 320), UNET_AttentionBlock(8, 80)),
