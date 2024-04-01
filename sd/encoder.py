@@ -88,3 +88,5 @@ class VAE_Encoder(nn.Sequential):
 
         # Scale the output by a constant
         x *= 0.18215
+
+        return x

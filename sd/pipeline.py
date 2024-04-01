@@ -63,4 +63,91 @@ def generate(prompt: str, uncond_prompt: str, input_image=None, strength=0.8, do
         
         latents_shape = (1, 4, LATENTS_HEIGHT, LATENTS_WIDTH)
 
+        if input_image:
+            encoder = models["encoder"]
+            encoder.to(device)
+
+            input_image_tensor = input_image.resize((WIDTH, HEIGHT))
+            input_image_tensor = np.array(input_image_tensor)
+            # (Height, Width, Channels = 3)
+            input_image_tensor = torch.tensor(input_image_tensor, dtype=torch.float32)
+            input_image_tensor = rescale(input_image_tensor, (0, 255), (-1, 1))
+
+            # (Height, Width, Channels) -> (Batch, Height, Width, Channels)
+            input_image_tensor = input_image_tensor.unsqueeze(dim=0)
+            # make channels first -> (Batch, Channels, Height, Width)
+            input_image_tensor = input_image_tensor.permute(0, 3, 1, 2)
+
+            encoder_noise = torch.randn(latents_shape, generator=generator, device=device)
+            # run image through the encoder
+            latents = encoder(input_image_tensor, encoder_noise)
+
+            sampler.set_strength(strength=strength)
+            latents = sampler.add_noise(latents, sampler.timestep[0])
+
+            to_idle(encoder)
+        else:
+            # If we do txt2img then generate random noise N(0, I)
+            latents = torch.randn(latents_shape, generator=generator, device=device)
+
+        diffusion = models["diffusion"]
+        diffusion.to(device)
+
+        timesteps = tqdm(sampler.timesteps)
+        for i, timestep in enumerate(timesteps):
+            # (1, 320)
+            time_embedding = get_time_embedding(timestep).to(device)
+            # latents : (Batch, 4, Latents_height, latents_width)
+            model_input = latents
+
+            if do_cfg:
+                # (batch, 4, Latents_height, latents_width) -> (2 * batch, 4, Latents_height, latents_width)
+                model_input = model_input.repeat(2, 1, 1, 1)
+
+            # model output is the noise predicted by the UNET
+            model_output = diffusion(model_input, context, time_embedding)
+
+            if do_cfg:
+                output_cond, output_uncond = torch.chunk(2, dim=0)
+                
+                model_output = cfg_scale * (output_cond - output_uncond) + output_uncond # formula of the classifier-free-guidance
+
+            # Remove the noise predicted by the UNET with Sampler(Scheduler)
+            latents = sampler.step(timestep, latents, model_output)
+
+        to_idle(diffusion)
+
+        decoder = models["decoder"]
+        decoder.to(device)
+
+        images = decoder(latents)
+        to_idle(decoder)
+
+        images = rescale(images, (-1, 1), (0, 255), clamp=True)
+        # (Batch, Channels, Height, Width) -> (Batch, Height, Width, Channels)
+        images = images.permute(0, 2, 3, 1)
+        images = images.to("cpu", torch.uint8).numpy()
+
+
+        return images[0]
         
+def rescale(x, old_range, new_range, clamp=False):
+    old_min, old_max = old_range
+    new_min, new_max = new_range
+
+    x -= old_min
+    x *= (new_max - new_min) / (old_max - old_min)
+    x += new_min
+    if clamp:
+        x = x.clamp(new_min, new_max)
+    return x
+
+def get_time_embedding(timestep):
+    # same as positional encoder in the transformer
+    # (160)
+    freqs = torch.pow(10000, - torch.arange(start=0, end=160, dtype = torch.float32) / 160)
+    # (1, 160)
+    x = torch.tensor([timestep], dtype=torch.float32)[: , None] * freqs[None]
+    # (1, 320)
+    return torch.cat([torch.cos(x), torch.sin(x)], dim=-1)
+    
