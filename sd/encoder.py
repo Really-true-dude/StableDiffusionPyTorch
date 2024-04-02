@@ -16,11 +16,11 @@ class VAE_Encoder(nn.Sequential):
             VAE_ResidualBlock(128, 128),
 
             #(Batch, 128, height, width) -> (Batch size, 128, Height / 2, Width / 2)
-            nn.Conv2d(128, 128, stride=2, kernel_size=3, padding=0),
+            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=0),
             
             #(Batch, 128, height / 2, width / 2) -> (Batch size, 256, Height / 2, Width / 2)
             VAE_ResidualBlock(128, 256),
-            VAE_ResidualBlock(128, 256),
+            VAE_ResidualBlock(256, 256),
 
             #(Batch, 256, height / 2, width / 2) -> (Batch size, 256, Height / 4, Width / 4)
             nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=0),

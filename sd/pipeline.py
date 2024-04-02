@@ -8,8 +8,16 @@ HEIGHT = 512
 LATENTS_WIDTH = WIDTH // 8
 LATENTS_HEIGHT = HEIGHT // 8
 
-def generate(prompt: str, uncond_prompt: str, input_image=None, strength=0.8, do_cfg=True, cfg_scale=7.5, 
-             sampler_name="ddpm", n_inference_steps=50, models={}, seed=None,
+def generate(prompt: str, 
+             uncond_prompt: str,
+             input_image=None, 
+             strength=0.8, 
+             do_cfg=True, 
+             cfg_scale=7.5, 
+             sampler_name="ddpm", 
+             n_inference_steps=50, 
+             models={}, 
+             seed=None,
              device = None,
              idle_device = None,
              tokenizer=None
@@ -19,9 +27,9 @@ def generate(prompt: str, uncond_prompt: str, input_image=None, strength=0.8, do
             raise ValueError("Strength must be between 0 and 1")
         
         if idle_device:
-            to_idle: lambda x: x.to(idle_device)
+            to_idle = lambda x: x.to(idle_device)
         else:
-            to_idle: lambda x : x
+            to_idle = lambda x : x
 
         generator = torch.Generator(device=device)
         if seed is None:
@@ -108,7 +116,7 @@ def generate(prompt: str, uncond_prompt: str, input_image=None, strength=0.8, do
             model_output = diffusion(model_input, context, time_embedding)
 
             if do_cfg:
-                output_cond, output_uncond = torch.chunk(2, dim=0)
+                output_cond, output_uncond = model_output.chunk(2, dim=0)
                 
                 model_output = cfg_scale * (output_cond - output_uncond) + output_uncond # formula of the classifier-free-guidance
 
@@ -150,4 +158,3 @@ def get_time_embedding(timestep):
     x = torch.tensor([timestep], dtype=torch.float32)[: , None] * freqs[None]
     # (1, 320)
     return torch.cat([torch.cos(x), torch.sin(x)], dim=-1)
-    

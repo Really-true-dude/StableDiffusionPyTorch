@@ -6,7 +6,7 @@ class DDPMSampler:
     def __init__(self, generator: torch.Generator, num_training_steps=1000, beta_start: float = 0.00085, beta_end: float = 0.0120):
         self.betas = torch.linspace(beta_start ** 0.5, beta_end ** 0.5, num_training_steps) ** 2
         self.alphas = 1.0 - self.betas
-        self.alpha_cumprod = torch.cumprod(self.alphas, 1) # [alpha_0, alpha_0 * alpha_1, alpha_0 * alpha_1 * alpha_2, ...]
+        self.alpha_cumprod = torch.cumprod(self.alphas, dim = 0) # [alpha_0, alpha_0 * alpha_1, alpha_0 * alpha_1 * alpha_2, ...]
         self.one = torch.tensor(1.0)
     
         self.generator = generator
@@ -19,7 +19,7 @@ class DDPMSampler:
         # 999, 998, 997, 996 ... 0 (1000 steps)
         # 999, 999 - 20, 999 - 40, ... 0 (50 steps)
         step_ratio = self.num_training_steps // self.num_inference_steps
-        timesteps = (torch.arange(0, num_inference_steps) * step_ratio)[::-1].copy().astype(np.int64)
+        timesteps = (np.arange(0, num_inference_steps) * step_ratio)[::-1].copy().astype(np.int64)
         self.timesteps = torch.from_numpy(timesteps)
     
     def _get_previous_timestep(self, timestep: int) -> int:
