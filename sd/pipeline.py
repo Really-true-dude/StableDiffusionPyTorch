@@ -3,10 +3,6 @@ import numpy as np
 from tqdm import tqdm
 from ddpm import DDPMSampler
 
-WIDTH = 512
-HEIGHT = 512
-LATENTS_WIDTH = WIDTH // 8
-LATENTS_HEIGHT = HEIGHT // 8
 
 def generate(prompt: str, 
              uncond_prompt: str,
@@ -16,12 +12,19 @@ def generate(prompt: str,
              cfg_scale=7.5, 
              sampler_name="ddpm", 
              n_inference_steps=50, 
-             models={}, 
+             models={},
+             HEIGHT = 512,
+             WIDTH = 512, 
              seed=None,
              device = None,
              idle_device = None,
              tokenizer=None
              ):
+    
+    LATENTS_WIDTH = WIDTH // 8
+    LATENTS_HEIGHT = HEIGHT // 8
+
+
     with torch.no_grad():
         if not (0 < strength <= 1):
             raise ValueError("Strength must be between 0 and 1")
@@ -33,7 +36,7 @@ def generate(prompt: str,
 
         generator = torch.Generator(device=device)
         if seed is None:
-            generate.seed()
+            generator.seed()
         else:
             generator.manual_seed(seed)
 

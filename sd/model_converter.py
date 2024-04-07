@@ -1,8 +1,22 @@
 import torch
+from safetensors.numpy import load_file
+import os
 
 def load_from_standard_weights(input_file: str, device: str) -> dict[str, torch.Tensor]:
-    # Taken from: https://github.com/kjsman/stable-diffusion-pytorch/issues/7#issuecomment-1426839447
-    original_model = torch.load(input_file, map_location=device, weights_only = False)["state_dict"]
+    # Taken and modified from: https://github.com/kjsman/stable-diffusion-pytorch/issues/7#issuecomment-1426839447
+    
+    original_model = {}
+
+    if(os.path.splitext(input_file)[1] == ".ckpt"):
+        original_model = torch.load(input_file, map_location=device, weights_only = False)["state_dict"]
+    elif(os.path.splitext(input_file)[1] == ".safetensors"):
+        loaded_dict_numpy = load_file(input_file)
+        for key in loaded_dict_numpy:
+            dict = {key : torch.tensor(loaded_dict_numpy[key])}
+            original_model.update(dict)
+    else:
+        raise Exception("Unsupported model format.")
+           
 
     converted = {}
     converted['diffusion'] = {}

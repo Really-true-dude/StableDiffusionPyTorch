@@ -3,10 +3,11 @@ import pipeline
 from PIL import Image
 from transformers import CLIPTokenizer
 import torch
+from safetensors.numpy import load_file
 
 DEVICE = "cpu"
 
-ALLOW_CUDA = False
+ALLOW_CUDA = True
 ALLOW_MPS = False
 
 if torch.cuda.is_available() and ALLOW_CUDA:
@@ -17,16 +18,17 @@ if torch.cuda.is_available() and ALLOW_CUDA:
 print(f"Using device: {DEVICE}")
 
 tokenizer = CLIPTokenizer(vocab_file="data/vocab.json" , merges_file="data/merges.txt")
-model_file = "data/Anything-V3.0-pruned.ckpt"
-
+model_file = "data\kawaiiRealisticAnime_a05.safetensors"
 models = model_loader.preload_models_from_standard_weights(model_file, DEVICE)
 
-## TEXT TO IMAGE
+WIDTH = 512
+HEIGHT = 768
 
-prompt = "1girl, blonde hair, school uniform, 8k, masterpiece"
-uncond_prompt = ""
+## TEXT TO IMAGE
+prompt = "1girl, blonde hair, short hair, bun, blue eyes, red blazer, white shirt, blue skirt, 8k, masterpiece"
+uncond_prompt = "bad resolution, worst quality, extra digits, ugly"
 do_cfg = True
-cfg_scale = 8
+cfg_scale = 7
 
 ## IMAGE TO IMAGE
 input_image = None
@@ -35,8 +37,8 @@ image_path = ""
 strength = 0.8
 
 sampler = "ddpm"
-num_inference_steps = 20
-seed = 42
+num_inference_steps = 30
+seed = None
 
 output_image = pipeline.generate(
     prompt=prompt,
@@ -49,6 +51,8 @@ output_image = pipeline.generate(
     n_inference_steps=num_inference_steps,
     seed=seed,
     models=models,
+    HEIGHT=HEIGHT,
+    WIDTH=WIDTH,
     device=DEVICE,
     idle_device="cpu",
     tokenizer=tokenizer
