@@ -101,20 +101,3 @@ def initialize_weights(model, scale = 0.1):
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
             nn.init.kaiming_normal_(m.weight.data) 
             m.weight.data *= scale
-
-def test():
-
-    device = "cuda"
-
-    gen = Generator().to(device)
-
-    low_res = 24
-
-    x = torch.randn((5, 3, 24, 48))
-    gen_out = gen(x.to(device))
-
-    print(gen_out.shape)
-
-
-if __name__ == "__main__":
-    test()

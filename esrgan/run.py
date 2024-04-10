@@ -36,7 +36,7 @@ def upscale(save_path: str, gen: torch.nn.Module, image_path: str, device):
 if __name__ == "__main__":
 
     SAVE_PATH = "esrgan/output/"
-    IMAGE_PATH = "esrgan/01.jpg"
+    IMAGE_PATH = "../img.jpg"
     ALLOW_CUDA = False
     DEVICE = "cuda" if torch.cuda.is_available() and ALLOW_CUDA else "cpu"
     MODEL_PATH = "esrgan/weights/R-ESRGAN_x4.pth"
