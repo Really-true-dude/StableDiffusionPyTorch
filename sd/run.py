@@ -4,25 +4,29 @@ from PIL import Image
 from transformers import CLIPTokenizer
 import torch
 from safetensors.numpy import load_file
+import sys
+sys.path.append("esrgan/")
+from inference import inference_esrgan, save
 
 DEVICE = "cpu"
 
+WIDTH = 512
+HEIGHT = 768
+
+SAVE_PATH = "output/"
+DO_UPSCALE = True
+UPSCALER_PATH = "esrgan/weights/R-ESRGAN_x4.pth"
 ALLOW_CUDA = True
-ALLOW_MPS = False
 
 if torch.cuda.is_available() and ALLOW_CUDA:
     DEVICE = "cuda"
-# elif(torch.has_mps or torch.backend.mps.is_available()) and ALLOW_MPS:
-#     DEVICE = "mps"
+
 
 print(f"Using device: {DEVICE}")
 
 tokenizer = CLIPTokenizer(vocab_file="data/vocab.json" , merges_file="data/merges.txt")
-model_file = "data\kawaiiRealisticAnime_a05.safetensors"
+model_file = "data/RealismFusion.safetensors"
 models = model_loader.preload_models_from_standard_weights(model_file, DEVICE)
-
-WIDTH = 512
-HEIGHT = 768
 
 ## TEXT TO IMAGE
 prompt = "1girl, blonde hair, short hair, bun, blue eyes, red blazer, white shirt, blue skirt, 8k, masterpiece"
@@ -37,25 +41,31 @@ image_path = ""
 strength = 0.8
 
 sampler = "ddpm"
-num_inference_steps = 30
+num_inference_steps = 1
 seed = None
 
-output_image = pipeline.generate(
-    prompt=prompt,
-    uncond_prompt=uncond_prompt,
-    input_image=input_image,
-    strength=strength,
-    do_cfg=do_cfg,
-    cfg_scale=cfg_scale,
-    sampler_name=sampler,
-    n_inference_steps=num_inference_steps,
-    seed=seed,
-    models=models,
-    HEIGHT=HEIGHT,
-    WIDTH=WIDTH,
-    device=DEVICE,
-    idle_device="cpu",
-    tokenizer=tokenizer
-)
+if __name__ == "__main__":
 
-image = Image.fromarray(output_image).save("img.jpg")
+    output_image = pipeline.generate(
+        prompt=prompt,
+        uncond_prompt=uncond_prompt,
+        input_image=input_image,
+        strength=strength,
+        do_cfg=do_cfg,
+        cfg_scale=cfg_scale,
+        sampler_name=sampler,
+        n_inference_steps=num_inference_steps,
+        seed=seed,
+        models=models,
+        HEIGHT=HEIGHT,
+        WIDTH=WIDTH,
+        device=DEVICE,
+        idle_device="cpu",
+        tokenizer=tokenizer
+    )
+
+    image_path = save(SAVE_PATH + "sd/", output_image)
+
+    if DO_UPSCALE:
+        SAVE_PATH += "upscaled/"
+        inference_esrgan(save_path = SAVE_PATH, image_path = image_path, model_path = UPSCALER_PATH, device=DEVICE)
